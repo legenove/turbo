@@ -1,0 +1,11 @@
+syntax = "proto3";
+package message;
+
+message Message {
+  string uuid = 1;  // union id for every message
+  sint64 sendTime = 2;  // 发送时间，毫秒级时间戳
+  bytes args = 3;  // 传输的参数
+  string taskName = 4;  // 任务名称
+  uint32 ReceiveCount = 5; // 接受次数
+  map<string, string> context = 6; // 上下文，可为空
+}
