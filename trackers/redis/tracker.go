@@ -3,9 +3,9 @@ package redis
 import (
 	"context"
 	"github.com/go-redis/redis"
-	"go_svc/ocls_tasks/tasks/configs"
-	"go_svc/ocls_tasks/tasks/message"
-	"go_svc/ocls_tasks/tasks/minware"
+	"github.com/legenove/turbo/configs"
+	"github.com/legenove/turbo/message"
+	"github.com/legenove/turbo/minware"
 	"strconv"
 	"time"
 )

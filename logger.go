@@ -1,11 +1,12 @@
 package tasks
 
 import (
-	"github.com/legenove/cocore"
-	"go.uber.org/zap"
-	"go_svc/ocls_tasks/tasks/configs"
-	"go_svc/ocls_tasks/tasks/message"
 	"time"
+
+	"github.com/legenove/cocore"
+	"github.com/legenove/turbo/configs"
+	"github.com/legenove/turbo/message"
+	"go.uber.org/zap"
 )
 
 const (

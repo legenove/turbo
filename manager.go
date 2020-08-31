@@ -2,11 +2,12 @@ package tasks
 
 import (
 	"fmt"
-	"go_svc/ocls_tasks/tasks/configs"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	"github.com/legenove/turbo/configs"
 )
 
 type ServerManager struct {

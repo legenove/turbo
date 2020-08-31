@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"go_svc/ocls_tasks/tasks/configs"
-	"go_svc/ocls_tasks/tasks/message"
-	"go_svc/ocls_tasks/tasks/trackers"
+	"github.com/legenove/turbo/configs"
+	"github.com/legenove/turbo/message"
+	"github.com/legenove/turbo/trackers"
 )
 
 type TaskServer struct {

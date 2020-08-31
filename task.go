@@ -3,15 +3,16 @@ package tasks
 import (
 	"context"
 	"errors"
-	"github.com/golang/protobuf/proto"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/legenove/random"
-	"go_svc/ocls_tasks/tasks/configs"
-	"go_svc/ocls_tasks/tasks/message"
-	"go_svc/ocls_tasks/tasks/trackers"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/golang/protobuf/proto"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/legenove/random"
+	"github.com/legenove/turbo/configs"
+	"github.com/legenove/turbo/message"
+	"github.com/legenove/turbo/trackers"
 )
 
 const (
@@ -56,7 +57,7 @@ func (t *Task) Publish(ctx context.Context, msg []byte, msgCtx map[string]string
 	if err != nil {
 		return uuid, err
 	}
-	if len(delayTime) > 0 && delayTime[0] > 0{
+	if len(delayTime) > 0 && delayTime[0] > 0 {
 		err = t.Tracker.SenderDelay(ctx, t.Conf, bm, delayTime[0])
 		printer.delay = delayTime[0]
 	} else {
@@ -87,7 +88,7 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 	workerNum := t.Conf.WorkerNum
 	if workerNum > MaxWorkerNumber {
 		workerNum = MaxWorkerNumber
-	} else if workerNum < receiverNum + 1 {
+	} else if workerNum < receiverNum+1 {
 		workerNum = receiverNum + 1
 	}
 	workPool := make(chan struct{}, MaxWorkerNumber+1)

@@ -2,8 +2,8 @@ package trackers
 
 import (
 	"context"
-	"go_svc/ocls_tasks/tasks/configs"
-	"go_svc/ocls_tasks/tasks/trackers/redis"
+	"github.com/legenove/turbo/configs"
+	"github.com/legenove/turbo/trackers/redis"
 )
 
 const (
