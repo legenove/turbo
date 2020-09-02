@@ -1,0 +1,31 @@
+tasks:
+  - task_name: "test1"                              # 任务名称，唯一
+    tag: "bd"                                       # 任务分组，用户文件自动生成
+    status: 1                                       # 任务状态，1 表示开启，0 表示关闭
+    worker_num: 20                                  # 处理消息的的协程数量
+    receiver_num: 3                                 # 接受的协程数量
+    warn_timeout: 30                                # 队列执行超过30秒，告警时间
+    send_timeout: 3                                 # 发送超时
+    repeat_time: 1                                  # worker处理重复次数 1 表示只发送一次
+    queue_type: "redis"                             # 队列类型， redis/ aws_sqs / aws_sns等
+    queue_group: "fast"                             # 队列分组，可启动某一组的队列
+    tracker_redis:
+      cluster_name: "default_redis"                 # redis名称，在配置redis.toml的routerName
+      task_key: "test_queue_1"                      # 队列key
+      delayed_task_key: "test_queue_1_delay_key"    # 延迟队列key
+      dead_letter_task_key: "test_queue_1_dead_key" # 死信队列key
+  - task_name: "test2"                              # 任务名称，唯一
+    tag: "bd"                                       # 任务分组，用户文件自动生成
+    status: 1                                       # 任务状态，1 表示开启，0 表示关闭
+    worker_num: 10                                  # 处理消息的的协程数量
+    receiver_num: 3                                 # 接受的协程数量
+    warn_timeout: 30                                # 队列执行超过30秒，告警时间
+    send_timeout: 3                                 # 发送超时
+    repeat_time: 1                                  # worker处理重复次数 1 表示只发送一次
+    queue_type: "redis"                             # 队列类型， redis/ aws_sqs / aws_sns等
+    queue_group: "fast"                             # 队列分组，可启动某一组的队列
+    tracker_redis:
+      cluster_name: "default_redis"                 # redis名称，在配置redis.toml的routerName
+      task_key: "test_queue_2"                      # 队列key
+      delayed_task_key: "test_queue_2_delay_key"    # 延迟队列key
+      dead_letter_task_key: "test_queue_2_dead_key" # 死信队列key

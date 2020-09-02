@@ -1,4 +1,4 @@
-package tasks
+package turbo
 
 import (
 	"context"
@@ -39,10 +39,10 @@ func (t *Task) Publish(ctx context.Context, msg []byte, msgCtx map[string]string
 	start := time.Now()
 	var bm []byte
 	var err error
-	printer := &LoggerPrinter{taskMsg: m, logEvent: LOG_EVENT_PRODUCER, msg: "publish msg"}
+	printer := &LoggerPrinter{taskMsg: m, LogEvent: LOG_EVENT_PRODUCER, Msg: "publish Msg"}
 	defer func() {
 		if err != nil {
-			printer.err = err
+			printer.Err = err
 		}
 		printer.Duration = time.Now().Sub(start)
 		GetLogger().Print(printer)
@@ -73,30 +73,34 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 	if t.Conf.Status == 0 {
 		return
 	}
-	_printer := &LoggerPrinter{taskConf: t.Conf, logEvent: LOG_EVENT_RECEIVER_START}
+	_printer := &LoggerPrinter{taskConf: t.Conf, LogEvent: LOG_EVENT_RECEIVER_START}
 	GetLogger().Print(_printer)
 	defer func() {
-		_printer.logEvent = LOG_EVENT_RECEIVER_END
+		_printer.LogEvent = LOG_EVENT_RECEIVER_END
 		GetLogger().Print(_printer)
 	}()
 	atomic.AddInt64(count, 1)
 	t.stop = make(chan struct{})
 	receiverNum := t.Conf.ReceiverNum
-	if receiverNum > MaxReceiverNumber {
+	if receiverNum == 0 {
+		receiverNum = 1
+	} else if receiverNum > MaxReceiverNumber {
 		receiverNum = MaxReceiverNumber
 	}
 	workerNum := t.Conf.WorkerNum
-	if workerNum > MaxWorkerNumber {
+	if workerNum == 0 {
+		workerNum = 1
+	} else if workerNum > MaxWorkerNumber {
 		workerNum = MaxWorkerNumber
-	} else if workerNum < receiverNum+1 {
-		workerNum = receiverNum + 1
 	}
+	preWorkerNum := workerNum
+	preWorkPool := make(chan struct{}, MaxWorkerNumber+1)
 	workPool := make(chan struct{}, MaxWorkerNumber+1)
 	msgChan := make(chan []byte, MaxWorkerNumber)
 	receiverPool := make(chan struct{}, MaxReceiverNumber)
 	delayReceiverPool := make(chan struct{}, MaxReceiverNumber)
-	for i := 0; i <= workerNum; i++ {
-		workPool <- struct{}{}
+	for i := 0; i <= preWorkerNum; i++ {
+		preWorkPool <- struct{}{}
 	}
 	for i := 0; i < receiverNum; i++ {
 		receiverPool <- struct{}{}
@@ -104,6 +108,9 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 	// 最多3个
 	for i := 0; i < receiverNum/40+1; i++ {
 		delayReceiverPool <- struct{}{}
+	}
+	for i := 0; i < workerNum; i++ {
+		workPool <- struct{}{}
 	}
 	wkWG := sync.WaitGroup{}
 	recvWG := sync.WaitGroup{}
@@ -120,11 +127,22 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 			case <-delayReceiverPool:
 				recvWG.Add(1)
 				go func() {
-					defer recvWG.Done()
-					err := t.Tracker.DelayReceiver(t.Conf, msgChan, workPool, t.stop)
+					defer func() {
+						if _err := recover(); _err != nil {
+							printer := &LoggerPrinter{taskConf: t.Conf, LogEvent: LOG_EVENT_RECEIVER}
+							_errMsg := "unknow"
+							if err, ok := _err.(error); ok {
+								_errMsg = "unknow:"+err.Error()
+							}
+							printer.Err = errors.New(_errMsg)
+							GetLogger().Print(printer)
+						}
+						recvWG.Done()
+					}()
+					err := t.Tracker.DelayReceiver(t.Conf, msgChan, preWorkPool, t.stop)
 					if err != nil {
-						printer := &LoggerPrinter{taskConf: t.Conf, logEvent: LOG_EVENT_RECEIVER}
-						printer.err = err
+						printer := &LoggerPrinter{taskConf: t.Conf, LogEvent: LOG_EVENT_RECEIVER}
+						printer.Err = err
 						GetLogger().Print(printer)
 					}
 					delayReceiverPool <- struct{}{}
@@ -150,12 +168,24 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 			case <-receiverPool:
 				recvWG.Add(1)
 				go func() {
-					defer recvWG.Done()
-					err := t.Tracker.Receiver(t.Conf, msgChan, workPool, t.stop)
+					defer func() {
+						if _err := recover(); _err != nil {
+							printer := &LoggerPrinter{taskConf: t.Conf, LogEvent: LOG_EVENT_RECEIVER}
+							_errMsg := "unknow"
+							if err, ok := _err.(error); ok {
+								_errMsg = "unknow:"+err.Error()
+							}
+							printer.Err = errors.New(_errMsg)
+							GetLogger().Print(printer)
+						}
+						recvWG.Done()
+					}()
+					err := t.Tracker.Receiver(t.Conf, msgChan, preWorkPool, t.stop)
 					if err != nil {
-						printer := &LoggerPrinter{taskConf: t.Conf, logEvent: LOG_EVENT_RECEIVER}
-						printer.err = err
+						printer := &LoggerPrinter{taskConf: t.Conf, LogEvent: LOG_EVENT_RECEIVER}
+						printer.Err = err
 						GetLogger().Print(printer)
+						time.Sleep(5 * time.Second)
 					}
 					// 执行一段时间则退出重来
 					receiverPool <- struct{}{}
@@ -184,10 +214,21 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 					break
 				}
 				wkWG.Add(1)
+				<- workPool
 				go func() {
 					var _t *Task
 					var err error
 					defer func() {
+						if _err := recover(); _err != nil {
+							printer := &LoggerPrinter{taskConf: t.Conf, LogEvent: LOG_EVENT_UNKNOW}
+							_errMsg := "unknow"
+							if err, ok := _err.(error); ok {
+								_errMsg = "unknow:"+err.Error()
+							}
+							printer.Err = errors.New(_errMsg)
+							GetLogger().Print(printer)
+						}
+						preWorkPool <- struct{}{}
 						workPool <- struct{}{}
 						wkWG.Done()
 					}()
@@ -206,17 +247,30 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 					ctx := message.NewMsgContext(msg)
 					_t, err = svc.GetTask(msg.TaskName)
 					if err != nil {
-						printer := &LoggerPrinter{taskMsg: msg, logEvent: LOG_EVENT_CONSUMER}
-						printer.err = errors.New("task conf not found")
+						printer := &LoggerPrinter{taskMsg: msg, LogEvent: LOG_EVENT_CONSUMER}
+						printer.Err = errors.New("task conf not found")
 						GetLogger().Print(printer)
 						return
 					}
 					start := time.Now()
+					defer func() {
+						// 运行是出错
+						if _err := recover(); _err != nil {
+							printer := &LoggerPrinter{taskMsg: msg, LogEvent: LOG_EVENT_CONSUMER}
+							printer.Duration = time.Now().Sub(start)
+							_errMsg := "unknow"
+							if err, ok := _err.(error); ok {
+								_errMsg = "unknow:"+err.Error()
+							}
+							printer.Err = errors.New(_errMsg)
+							GetLogger().Print(printer)
+						}
+					}()
 					err = _t.Worker.Process(ctx, msg.GetArgs())
-					printer := &LoggerPrinter{taskMsg: msg, logEvent: LOG_EVENT_CONSUMER}
+					printer := &LoggerPrinter{taskMsg: msg, LogEvent: LOG_EVENT_CONSUMER}
 					printer.Duration = time.Now().Sub(start)
 					if err != nil {
-						printer.err = err
+						printer.Err = err
 						GetLogger().Print(printer)
 						// 失败重新发送处理
 						if int(msg.ReceiveCount) < _t.Conf.RepeatTime {
@@ -238,7 +292,7 @@ func (t *Task) Consumer(svc *TaskServer, queueGroup string, count *int64, stop c
 						}
 						return
 					}
-					printer.err = nil
+					printer.Err = nil
 					GetLogger().Print(printer)
 				}()
 			}

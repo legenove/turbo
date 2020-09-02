@@ -1,4 +1,4 @@
-package tasks
+package turbo
 
 import (
 	"time"
@@ -16,6 +16,7 @@ const (
 	LOG_EVENT_RECEIVER_START = "receiver_start"
 	LOG_EVENT_RECEIVER_END   = "receiver_end"
 	LOG_EVENT_RECEIVER       = "receiver"
+	LOG_EVENT_UNKNOW         = "unknow"
 )
 
 var Logger TurboLogger
@@ -32,11 +33,11 @@ func RegisterLogger(log TurboLogger) {
 }
 
 type LoggerPrinter struct {
-	logEvent string
+	LogEvent string
 	taskMsg  *message.Message
 	taskConf *configs.TaskConfig
-	err      error
-	msg      string
+	Err      error
+	Msg      string
 	delay    int
 	Duration time.Duration
 }
@@ -44,7 +45,7 @@ type LoggerPrinter struct {
 func (p *LoggerPrinter) GetTaskField() []zap.Field {
 	var fields = make([]zap.Field, 0, 16)
 	fields = append(fields,
-		zap.String("event", p.logEvent),
+		zap.String("event", p.LogEvent),
 		zap.Namespace("properties"),
 		zap.String("uuid", p.taskMsg.Uuid),
 		zap.String("task_name", p.taskMsg.TaskName),
@@ -52,7 +53,7 @@ func (p *LoggerPrinter) GetTaskField() []zap.Field {
 		zap.Int64("send_time", p.taskMsg.SendTime),
 		zap.Duration("duration", p.Duration),
 	)
-	if p.err != nil {
+	if p.Err != nil {
 		fields = append(fields,
 			zap.ByteString("task_msg", p.taskMsg.GetArgs()),
 		)
@@ -68,7 +69,7 @@ func (p *LoggerPrinter) GetTaskField() []zap.Field {
 func (p *LoggerPrinter) GetTaskConfField() []zap.Field {
 	var fields = make([]zap.Field, 0, 16)
 	fields = append(fields,
-		zap.String("event", p.logEvent),
+		zap.String("event", p.LogEvent),
 		zap.Namespace("properties"),
 		zap.String("task_name", p.taskConf.TaskName),
 		zap.Int("worker_num", p.taskConf.WorkerNum),
@@ -101,18 +102,24 @@ func (logger *DefaultLogger) Print(p *LoggerPrinter) {
 	if err != nil {
 		return
 	}
-	switch p.logEvent {
+	switch p.LogEvent {
 	case LOG_EVENT_PRODUCER, LOG_EVENT_CONSUMER:
-		if p.err != nil {
-			l.Error(p.err.Error(), p.GetTaskField()...)
+		if p.Err != nil {
+			l.Error(p.Err.Error(), p.GetTaskField()...)
 		} else {
-			l.Info(p.msg, p.GetTaskField()...)
+			l.Info(p.Msg, p.GetTaskField()...)
 		}
 	case LOG_EVENT_RECEIVER_START, LOG_EVENT_RECEIVER, LOG_EVENT_RECEIVER_END:
-		if p.err != nil {
-			l.Error(p.err.Error(), p.GetTaskConfField()...)
+		if p.Err != nil {
+			l.Error(p.Err.Error(), p.GetTaskConfField()...)
 		} else {
-			l.Info(p.msg, p.GetTaskConfField()...)
+			l.Info(p.Msg, p.GetTaskConfField()...)
+		}
+	case LOG_EVENT_UNKNOW:
+		if p.Err != nil {
+			l.Error(p.Err.Error(), p.GetTaskConfField()...)
+		} else {
+			l.Info(p.Msg, p.GetTaskConfField()...)
 		}
 	}
 }

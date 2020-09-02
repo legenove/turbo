@@ -1,0 +1,5 @@
+LOG_DIR      = "/tmp/logs/"
+ETCD_CLUSTER = []
+REDIS_CONF   = "redis.toml"
+CONSUMER_CONF = "consumer.yaml"
+CRON_CONF = "crontab.toml"

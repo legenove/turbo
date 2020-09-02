@@ -24,17 +24,16 @@ func RegisterRedisClusterClient(clusterName string, client *redis.ClusterClient)
 
 func GetRedisClient(name string) (*redis.Client, error) {
 	if redisClientMap != nil {
-		if client, ok := redisClientMap[name]; ok {
+		if client, ok := redisClientMap[name]; ok && client != nil {
 			return client, nil
 		}
 	}
 	return redis_client.GetRedisClient(name)
 }
 
-
 func GetRedisClusterClient(clusterName string) (*redis.ClusterClient, error) {
 	if redisClientMap != nil {
-		if client, ok := redisClusterClientMap[clusterName]; ok {
+		if client, ok := redisClusterClientMap[clusterName]; ok && client != nil {
 			return client, nil
 		}
 	}
