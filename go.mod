@@ -9,6 +9,6 @@ require (
 	github.com/legenove/cocore v1.0.14
 	github.com/legenove/easyconfig v0.0.0-20210304115308-8a9aa78abffb
 	github.com/legenove/random v1.0.1
-	github.com/legenove/redis_client v1.0.9
+	github.com/legenove/redis_client v1.0.10
 	go.uber.org/zap v1.15.0
 )
