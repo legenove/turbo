@@ -2,7 +2,7 @@ package configs
 
 import (
 	"github.com/legenove/cocore"
-	"github.com/legenove/viper_conf"
+	"github.com/legenove/easyconfig/ifacer"
 	"sync"
 )
 
@@ -70,7 +70,7 @@ type ReidsTrackerConf struct {
 	WarnQueueCount    int    `json:"warn_queue_count" mapstructure:"warn_queue_count"`
 }
 
-var ConsumerConf *viper_conf.ViperConf
+var ConsumerConf *ifacer.Configer
 var lock sync.Mutex
 
 func GetTaskConf() (*TasksConfigs, error) {
@@ -80,8 +80,7 @@ func GetTaskConf() (*TasksConfigs, error) {
 	lock.Lock()
 	defer lock.Unlock()
 	if ConsumerConf == nil {
-		consumerName := cocore.App.GetStringConfig("consumer_conf", "consumer.yaml")
-		c, err := cocore.Conf.Instance(consumerName, &TasksConfigs{}, nil, nil)
+		c, err := cocore.Conf.Instance("consumer.yaml", "yaml", &TasksConfigs{}, nil, nil)
 		if err != nil {
 			return nil, err
 		}

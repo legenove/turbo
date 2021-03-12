@@ -1,7 +1,7 @@
 package minware
 
 import (
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/legenove/redis_client"
 )
 
